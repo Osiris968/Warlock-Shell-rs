@@ -8,9 +8,10 @@ use std::io::{self, Write};
 use std::path;
 
 use shellrs::build_shell_prompt;
-use shellrs::condense_path;
 use shellrs::get_home_directory;
 use shellrs::print_help;
+
+mod configs;
 
 // Invokes an appropriate syscall from the exec family.
 fn my_exec(arg_list: &Vec<&str>) {
@@ -53,18 +54,19 @@ fn change_directory(new_path: &path::Path) {
 }
 
 fn expand_tilde(path: &str) -> String {
+    let owned_path = String::from(path);
     if path.is_empty() {
-        return path.to_owned();
+        return owned_path;
     }
 
     let mut path_chars = path.char_indices();
 
     if path_chars.next() != Some((0, '~')) {
-        return path.to_owned();
+        return owned_path;
     }
 
     let home_dir: String =
-        get_home_directory().unwrap().to_str().unwrap().to_owned();
+        String::from(get_home_directory().unwrap().to_str().unwrap());
 
     if path.len() == 1 {
         return home_dir;
@@ -74,7 +76,7 @@ fn expand_tilde(path: &str) -> String {
         return home_dir + &path[1..];
     }
 
-    path.to_owned()
+    owned_path
 }
 
 fn parse_commands(arg_list: Vec<&str>) -> i32 {
@@ -132,8 +134,6 @@ fn main() -> io::Result<()> {
         } else if code == 255 {
             break;
         }
-
-        condense_path(path::PathBuf::from("/home/mkestner/Pictures")).unwrap();
 
         fork_and_exec(&args);
     }
