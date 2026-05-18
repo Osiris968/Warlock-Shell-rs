@@ -1,7 +1,10 @@
 // Copyright (c) 2026 Michael Kestner. All Rights Reserved.
 // configs.rs
+
 #![allow(unused)]
+
 use std::env;
+use std::fs;
 use std::io;
 use std::path;
 
@@ -18,8 +21,56 @@ fn config_file_exists() -> bool {
     if let Ok(config_path) = get_config_path() {
         path::Path::new(&config_path).exists()
     } else {
+        eprintln!("Could not find path to config");
         false
     }
 }
 
-pub fn create_config_file() {}
+pub fn create_config_file() -> bool {
+    if config_file_exists() {
+        eprintln!("Config file already exists. ");
+        eprintln!("Remove existing one before trying to generate a new one.");
+        return false;
+    }
+
+    // Populate the path needed to create the file.
+    let file_path: String = if let Ok(path) = get_config_path() {
+        path
+    } else {
+        eprintln!("Could not find path to config");
+        return false;
+    };
+
+    let directory_path: String = if let Some(path) = dirs::config_dir() {
+        match path.to_str() {
+            Some(path) => String::from(path) + "/warlock-shell",
+            None => {
+                eprintln!("Could not convert config path to string");
+                String::from("ERROR")
+            }
+        }
+    } else {
+        eprintln!("Could not find config directory");
+        return false;
+    };
+
+    if let Err(e) = fs::create_dir(directory_path) {
+        eprintln!("Could not create config directory");
+        return false;
+    }
+
+    let file = if let Ok(file) = fs::File::create(&file_path) {
+        file
+    } else {
+        eprintln!("Could not create config file");
+        return false;
+    };
+
+    let data = "# Welcome to the Warlock Shell!
+# This is where you can configure the shell's behaviors.
+# A full list of supported configs are available on the wiki.
+";
+    fs::write(&file_path, data).unwrap();
+
+    true
+}
