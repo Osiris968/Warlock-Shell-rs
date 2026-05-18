@@ -65,12 +65,7 @@ pub fn condense_path(path: path::PathBuf) -> io::Result<String> {
     };
 
     // Find the home directory and turn it into a String.
-    let home_dir = match get_home_directory() {
-        Ok(home) => home.to_str().unwrap_or("/home").to_owned(),
-        Err(e) => {
-            return Err(e);
-        }
-    };
+    let home_dir = get_home_directory()?;
 
     // If the first part of the given path is identical to the home directory path, then replace it
     // with a '~' and return it.
@@ -82,8 +77,19 @@ pub fn condense_path(path: path::PathBuf) -> io::Result<String> {
 }
 
 // Find the user's home directory.
-pub fn get_home_directory() -> io::Result<path::PathBuf> {
-    dirs::home_dir().ok_or_else(|| {
-        io::Error::new(io::ErrorKind::NotFound, "Could not find home directory")
-    })
+pub fn get_home_directory() -> io::Result<String> {
+    // Returns the home directory as a PathBuf.
+    let home_path = match dirs::home_dir() {
+        Some(home) => home,
+        None => {
+            return Err(io::Error::other("Could not find home directory"));
+        }
+    };
+
+    // Change the PathBuf to a String.
+    let home_string = match home_path.to_str() {
+        Some(home) => home,
+        None => return Err(io::Error::other("Could not convert home path to string")),
+    };
+    Ok(String::from(home_string))
 }
