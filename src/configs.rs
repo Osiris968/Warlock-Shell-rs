@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Michael Kestner. All Rights Reserved.
 // configs.rs
 
-#![allow(unused)]
+// #![allow(unused)]
 
 use std::env;
 use std::fs;
@@ -10,7 +10,7 @@ use std::path;
 
 use shellrs::get_home_directory;
 
-pub fn get_config_path() -> io::Result<String> {
+fn get_config_path() -> io::Result<String> {
     let home_dir = get_home_directory()?;
     let config_path = "/.config/warlock-shell/warlock.conf";
 
@@ -54,22 +54,22 @@ pub fn create_config_file() -> bool {
         return false;
     };
 
-    if let Err(e) = fs::create_dir(directory_path) {
+    if fs::create_dir(&directory_path).is_err() {
         eprintln!("Could not create config directory");
         return false;
     }
 
-    let file = if let Ok(file) = fs::File::create(&file_path) {
-        file
-    } else {
+    if fs::File::create(&file_path).is_err() {
         eprintln!("Could not create config file");
         return false;
-    };
+    }
 
     let data = "# Welcome to the Warlock Shell!
 # This is where you can configure the shell's behaviors.
 # A full list of supported configs are available on the wiki.
 ";
+
+    // TODO: Remove unwrap.
     fs::write(&file_path, data).unwrap();
 
     true
