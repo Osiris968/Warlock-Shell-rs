@@ -1,9 +1,8 @@
 // Copyright (c) 2026 Michael Kestner. All Rights Reserved.
 // configs.rs
 
-// #![allow(unused)]
+#![allow(unused)]
 
-use std::env;
 use std::fs;
 use std::io;
 use std::path;
@@ -27,13 +26,14 @@ fn config_file_exists() -> bool {
 }
 
 pub fn create_config_file() -> bool {
+    // Config file already exists, nothing to be done.
     if config_file_exists() {
         eprintln!("Config file already exists. ");
         eprintln!("Remove existing one before trying to generate a new one.");
         return false;
     }
 
-    // Populate the path needed to create the file.
+    // Find the path needed to create the file.
     let file_path: String = if let Ok(path) = get_config_path() {
         path
     } else {
@@ -41,14 +41,18 @@ pub fn create_config_file() -> bool {
         return false;
     };
 
+    // Find the parent directory for the config file.
+    // dirs::config_dir() returns a PathBuf, so we need to turn it into a string.
     let directory_path: String = if let Some(path) = dirs::config_dir() {
+        // dirs::config_dir() returned Some(path).
         match path.to_str() {
             Some(path) => String::from(path) + "/warlock-shell",
             None => {
                 eprintln!("Could not convert config path to string");
-                String::from("ERROR")
+                return false;
             }
         }
+        // dirs::config_dir() returned None.
     } else {
         eprintln!("Could not find config directory");
         return false;
@@ -69,8 +73,12 @@ pub fn create_config_file() -> bool {
 # A full list of supported configs are available on the wiki.
 ";
 
-    // TODO: Remove unwrap.
-    fs::write(&file_path, data).unwrap();
+    if fs::write(&file_path, data).is_err() {
+        eprintln!("Could not write data to new file");
+        return false;
+    }
 
     true
 }
+
+pub fn read_configs(configs: &[(String, String)]) {}
