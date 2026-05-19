@@ -4,10 +4,10 @@
 #![allow(unused)]
 
 use std::fs;
-use std::io;
+use std::io::{self, BufRead};
 use std::path;
 
-use shellrs::get_home_directory;
+use crate::get_home_directory;
 
 fn get_config_path() -> io::Result<String> {
     let home_dir = get_home_directory()?;
@@ -58,7 +58,7 @@ pub fn create_config_file() -> bool {
         return false;
     };
 
-    if fs::create_dir(&directory_path).is_err() {
+    if fs::create_dir_all(&directory_path).is_err() {
         eprintln!("Could not create config directory");
         return false;
     }
@@ -81,4 +81,64 @@ pub fn create_config_file() -> bool {
     true
 }
 
-pub fn read_configs(configs: &[(String, String)]) {}
+pub fn read_configs() -> io::Result<()> {
+    if !config_file_exists() {
+        return Err(io::Error::new(
+            io::ErrorKind::AlreadyExists,
+            "No current config file exists. Create a new one to continue.",
+        ));
+    }
+
+    let file_path = get_config_path()?;
+    let file = fs::File::open(file_path)?;
+
+    let reader = io::BufReader::new(file);
+
+    let mut configs: Vec<(String, String)> = Vec::new();
+    let mut keep_going = true;
+
+    // line is a Result<String, Error>.
+    for line in reader.lines() {
+        let line = line?;
+        // Skips line if it's a comment or if it's empty.
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        let mut pair: (String, String) = (String::new(), String::new());
+
+        // Split key value pairs by '=' and get rid of comments.
+        let strs: Vec<&str> = line
+            .split_once('#') // Split once returns a (before, after) tuple.
+            .map(|(before, _)| before) // This map discards the after part of the tuple.
+            .unwrap_or(&line) // If there is no '#', just use the whole string.
+            .split('=') // Then split on the '='
+            .collect();
+
+        if strs.len() <= 1 {
+            eprintln!("Either key or value is missing, skipping line.");
+            continue;
+        } else if strs.len() > 2 {
+            eprintln!("Line has more than one equal sign, skipping line.");
+            continue;
+        }
+
+        let strs: Vec<&str> = strs.iter().map(|&str| str.trim()).collect();
+
+        // NOTE: For testing!
+        for &str in &strs {
+            println!("{}", str);
+        }
+
+        if !keep_going {
+            pair = (String::from(strs[0]), String::from(strs[1]));
+        }
+
+        if !pair.1.is_empty() {
+            configs.push(pair);
+        }
+
+        keep_going = !keep_going;
+    }
+
+    Ok(())
+}
