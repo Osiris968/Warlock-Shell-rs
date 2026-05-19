@@ -2,6 +2,10 @@ use std::env;
 use std::io;
 use std::path;
 
+pub mod configuration {
+    pub mod configs;
+}
+
 pub fn print_help() {
     println!("Codename Warlock Shell");
     println!("Copyright @ Michael Kestner");
