@@ -11,6 +11,8 @@ use shellrs::build_shell_prompt;
 use shellrs::get_home_directory;
 use shellrs::print_help;
 
+use shellrs::configuration::configs;
+
 // Invokes an appropriate syscall from the exec family.
 fn my_exec(arg_list: &[&str]) {
     if arg_list.is_empty() {
@@ -41,7 +43,7 @@ fn fork_and_exec(arg_list: &[&str]) {
         Ok(ForkResult::Child) => {
             my_exec(arg_list);
         }
-        Err(_) => eprintln!("Fork failed!"),
+        Err(e) => eprintln!("Fork failed! {}", e),
     }
 }
 
@@ -114,12 +116,27 @@ fn parse_commands(arg_list: Vec<&str>) -> i32 {
                 _ => change_directory(path::Path::new(arg_list[1])),
             };
             return 1;
+        } else if *first == "warlock_gen_config" {
+            configs::create_config_file();
+            return 1;
         }
     }
     0
 }
 
+fn kickstart_config() -> io::Result<()> {
+    configs::read_configs()?;
+    Ok(())
+}
+
 fn main() -> io::Result<()> {
+    if let Err(e) = kickstart_config() {
+        eprintln!(
+            "An error occurred related to the shell's config file: {}",
+            e
+        );
+    }
+
     loop {
         print!("{}", build_shell_prompt());
 

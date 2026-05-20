@@ -82,10 +82,10 @@ pub fn create_config_file() -> bool {
     true
 }
 
-pub fn read_configs() -> io::Result<()> {
+pub fn read_configs() -> io::Result<HashMap<String, String>> {
     if !config_file_exists() {
         return Err(io::Error::new(
-            io::ErrorKind::AlreadyExists,
+            io::ErrorKind::NotFound,
             "No current config file exists. Create a new one to continue.",
         ));
     }
@@ -141,5 +141,5 @@ pub fn read_configs() -> io::Result<()> {
         keep_going = !keep_going;
     }
 
-    Ok(())
+    Ok(config_map)
 }
