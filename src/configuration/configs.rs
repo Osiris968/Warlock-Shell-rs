@@ -3,6 +3,7 @@
 
 #![allow(unused)]
 
+use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead};
 use std::path;
@@ -94,7 +95,7 @@ pub fn read_configs() -> io::Result<()> {
 
     let reader = io::BufReader::new(file);
 
-    let mut configs: Vec<(String, String)> = Vec::new();
+    let mut config_map: HashMap<String, String> = HashMap::new();
     let mut keep_going = true;
 
     // line is a Result<String, Error>.
@@ -104,7 +105,6 @@ pub fn read_configs() -> io::Result<()> {
         if line.starts_with('#') || line.is_empty() {
             continue;
         }
-        let mut pair: (String, String) = (String::new(), String::new());
 
         // Split key value pairs by '=' and get rid of comments.
         let strs: Vec<&str> = line
@@ -124,17 +124,18 @@ pub fn read_configs() -> io::Result<()> {
 
         let strs: Vec<&str> = strs.iter().map(|&str| str.trim()).collect();
 
+        if strs[0].is_empty() || strs[1].is_empty() {
+            eprintln!("Either key or value is missing, skipping line.");
+            continue;
+        }
+
         // NOTE: For testing!
         for &str in &strs {
             println!("{}", str);
         }
 
         if !keep_going {
-            pair = (String::from(strs[0]), String::from(strs[1]));
-        }
-
-        if !pair.1.is_empty() {
-            configs.push(pair);
+            config_map.insert(String::from(strs[0]), String::from(strs[1]));
         }
 
         keep_going = !keep_going;
