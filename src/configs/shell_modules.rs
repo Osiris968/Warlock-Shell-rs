@@ -1,8 +1,8 @@
-use crate::configs;
 use std::collections::HashMap;
 use std::io;
 
-pub fn prompt_color() -> io::Result<String> {
+// TODO: get rid of result return. there is no case where this errors.
+pub fn prompt_color(c: Option<&str>) -> io::Result<String> {
     let color_map: HashMap<&str, &str> = HashMap::from([
         ("red", "\x1b[31m"),
         ("green", "\x1b[32m"),
@@ -13,13 +13,10 @@ pub fn prompt_color() -> io::Result<String> {
         ("white", "\x1b[37m"),
     ]);
 
-    let config_map: HashMap<String, String> = configs::read_configs()?;
+    let color = c.unwrap_or("green");
 
-    for (key, value) in config_map {
-        if key == "prompt_color" && color_map.contains_key(value.as_str()) {
-            return Ok(String::from(color_map[value.as_str()]));
-        }
+    match color_map.get(&color) {
+        Some(val) => Ok(val.to_string()),
+        None => Ok(String::from(color)),
     }
-
-    Ok(String::from(color_map["green"]))
 }

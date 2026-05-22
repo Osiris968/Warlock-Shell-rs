@@ -2,10 +2,10 @@ use nix::{
     sys::wait::waitpid,
     unistd::{ForkResult, execvp, fork},
 };
-use std::env;
 use std::ffi::{CStr, CString};
 use std::io::{self, Write};
 use std::path;
+use std::{collections::HashMap, env};
 
 use shellrs::build_shell_prompt;
 use shellrs::get_home_directory;
@@ -124,21 +124,15 @@ fn parse_commands(arg_list: Vec<&str>) -> i32 {
     0
 }
 
-fn kickstart_config() -> io::Result<()> {
-    configs::read_configs()?;
-    Ok(())
-}
-
 fn main() -> io::Result<()> {
-    if let Err(e) = kickstart_config() {
-        eprintln!(
-            "An error occurred related to the shell's config file: {}",
-            e
-        );
-    }
+    let config_map: HashMap<String, String> = configs::read_configs()?;
+    let prompt_color: &str = match config_map.get("prompt_color") {
+        Some(val) => val,
+        None => "green",
+    };
 
     loop {
-        print!("{}", build_shell_prompt());
+        print!("{}", build_shell_prompt(prompt_color));
 
         if let Err(e) = io::stdout().flush() {
             eprintln!("Unable to flush stdout: {}", e);
