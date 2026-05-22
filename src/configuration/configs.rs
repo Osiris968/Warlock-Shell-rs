@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Michael Kestner. All Rights Reserved.
 // configs.rs
 
-#![allow(unused)]
+// #![allow(unused)]
 
 use std::collections::HashMap;
 use std::fs;
@@ -86,7 +86,7 @@ pub fn read_configs() -> io::Result<HashMap<String, String>> {
     if !config_file_exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            "No current config file exists. Create a new one to continue.",
+            "No current config file exists. Create a new one with \"warlock_gen_config\" to continue.",
         ));
     }
 
@@ -127,11 +127,6 @@ pub fn read_configs() -> io::Result<HashMap<String, String>> {
         if strs[0].is_empty() || strs[1].is_empty() {
             eprintln!("Either key or value is missing, skipping line.");
             continue;
-        }
-
-        // NOTE: For testing!
-        for &str in &strs {
-            println!("{}", str);
         }
 
         if !keep_going {
