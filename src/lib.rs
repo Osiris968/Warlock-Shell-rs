@@ -21,13 +21,7 @@ pub fn print_help() {
 // Construct the shell's prompt from the username, hostname, and current path.
 // Returns a formatted String with colors!
 pub fn build_shell_prompt(color: &str) -> String {
-    // let color = prompt_color(Some(String::from(color)));
-    let color = if let Ok(c) = prompt_color(Some(color)) {
-        c
-    } else {
-        // If error, color defaults to green.
-        String::from(color)
-    };
+    let color = prompt_color(Some(color));
     let reset = "\x1b[0m";
 
     let username = match whoami::username() {

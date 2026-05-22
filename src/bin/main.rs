@@ -139,9 +139,15 @@ fn main() -> io::Result<()> {
         }
 
         let mut user_input = String::new();
-        io::stdin()
-            .read_line(&mut user_input)
-            .expect("Failed to read line");
+        match io::stdin().read_line(&mut user_input) {
+            // Ctrl+D was given, break loop.
+            Ok(0) => break,
+            Ok(_) => (),
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                continue;
+            }
+        }
 
         if user_input.is_empty() {
             continue;
