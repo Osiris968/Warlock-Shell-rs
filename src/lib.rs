@@ -2,11 +2,9 @@ use std::env;
 use std::io;
 use std::path;
 
-// use crate::configuration::configs;
+use crate::configs::shell_modules::prompt_color;
 
-pub mod configuration {
-    pub mod configs;
-}
+pub mod configs;
 
 pub fn print_help() {
     println!("Codename Warlock Shell");
@@ -23,21 +21,26 @@ pub fn print_help() {
 // Construct the shell's prompt from the username, hostname, and current path.
 // Returns a formatted String with colors!
 pub fn build_shell_prompt() -> String {
-    let color = "\x1b[36m";
+    let color = if let Ok(c) = prompt_color() {
+        c
+    } else {
+        // If error, color defaults to green.
+        String::from("\x1b[32m")
+    };
     let reset = "\x1b[0m";
 
     let username = match whoami::username() {
         Ok(username) => username,
         Err(e) => {
             eprintln!("Unable to find username: {}", e);
-            String::from("Error")
+            String::from("ERROR")
         }
     };
     let hostname = match whoami::hostname() {
         Ok(hostname) => hostname,
         Err(e) => {
             eprintln!("Unable to find device hostname: {}", e);
-            String::from("Error")
+            String::from("ERROR")
         }
     };
 

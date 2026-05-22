@@ -11,7 +11,7 @@ use shellrs::build_shell_prompt;
 use shellrs::get_home_directory;
 use shellrs::print_help;
 
-use shellrs::configuration::configs;
+use shellrs::configs;
 
 // Invokes an appropriate syscall from the exec family.
 fn my_exec(arg_list: &[&str]) {

@@ -1,11 +1,8 @@
-#![allow(unused)]
-
-use shellrs::configs;
-
+use crate::configs;
 use std::collections::HashMap;
 use std::io;
 
-fn prompt_color() -> io::Result<String> {
+pub fn prompt_color() -> io::Result<String> {
     let color_map: HashMap<&str, &str> = HashMap::from([
         ("red", "\x1b[31m"),
         ("green", "\x1b[32m"),
@@ -25,10 +22,4 @@ fn prompt_color() -> io::Result<String> {
     }
 
     Ok(String::from(color_map["green"]))
-}
-
-fn main() -> io::Result<()> {
-    // read_configs()?;
-    prompt_color().unwrap();
-    Ok(())
 }

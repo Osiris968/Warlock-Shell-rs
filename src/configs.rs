@@ -10,6 +10,8 @@ use std::path;
 
 use crate::get_home_directory;
 
+pub mod shell_modules;
+
 fn get_config_path() -> io::Result<String> {
     let home_dir = get_home_directory()?;
     let config_path = "/.config/warlock-shell/warlock.conf";
