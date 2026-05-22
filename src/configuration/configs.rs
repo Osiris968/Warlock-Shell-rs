@@ -96,7 +96,6 @@ pub fn read_configs() -> io::Result<HashMap<String, String>> {
     let reader = io::BufReader::new(file);
 
     let mut config_map: HashMap<String, String> = HashMap::new();
-    let mut keep_going = true;
 
     // line is a Result<String, Error>.
     for line in reader.lines() {
@@ -129,11 +128,7 @@ pub fn read_configs() -> io::Result<HashMap<String, String>> {
             continue;
         }
 
-        if !keep_going {
-            config_map.insert(String::from(strs[0]), String::from(strs[1]));
-        }
-
-        keep_going = !keep_going;
+        config_map.insert(String::from(strs[0]), String::from(strs[1]));
     }
 
     Ok(config_map)

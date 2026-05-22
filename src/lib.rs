@@ -2,6 +2,8 @@ use std::env;
 use std::io;
 use std::path;
 
+// use crate::configuration::configs;
+
 pub mod configuration {
     pub mod configs;
 }
@@ -21,8 +23,7 @@ pub fn print_help() {
 // Construct the shell's prompt from the username, hostname, and current path.
 // Returns a formatted String with colors!
 pub fn build_shell_prompt() -> String {
-    let _red = "\x1b[31m";
-    let green = "\x1b[32m";
+    let color = "\x1b[36m";
     let reset = "\x1b[0m";
 
     let username = match whoami::username() {
@@ -54,7 +55,7 @@ pub fn build_shell_prompt() -> String {
 
     format!(
         "{}{}{}@{} {}{}{}> ",
-        green, username, reset, hostname, green, path, reset
+        color, username, reset, hostname, color, path, reset
     )
 }
 
@@ -93,7 +94,11 @@ pub fn get_home_directory() -> io::Result<String> {
     // Change the PathBuf to a String.
     let home_string = match home_path.to_str() {
         Some(home) => home,
-        None => return Err(io::Error::other("Could not convert home path to string")),
+        None => {
+            return Err(io::Error::other(
+                "Could not convert home path to string",
+            ));
+        }
     };
     Ok(String::from(home_string))
 }

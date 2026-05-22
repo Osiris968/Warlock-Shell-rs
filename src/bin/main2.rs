@@ -1,52 +1,34 @@
 #![allow(unused)]
 
-use shellrs::configuration::configs;
+use shellrs::configuration::configs::{self, read_configs};
 
 use std::collections::HashMap;
 use std::io;
 
-fn main() -> io::Result<()> {
+fn prompt_color() -> io::Result<String> {
+    let color_map: HashMap<&str, &str> = HashMap::from([
+        ("red", "\x1b[31m"),
+        ("green", "\x1b[32m"),
+        ("yellow", "\x1b[33m"),
+        ("blue", "\x1b[34m"),
+        ("purple", "\x1b[35m"),
+        ("cyan", "\x1b[36m"),
+        ("white", "\x1b[37m"),
+    ]);
+
     let config_map: HashMap<String, String> = configs::read_configs()?;
 
     for (key, value) in config_map {
-        if key == "prompt_color" {
-            todo!();
+        if key == "prompt_color" && color_map.contains_key(value.as_str()) {
+            return Ok(String::from(color_map[value.as_str()]));
         }
     }
 
+    Ok(String::from(color_map["green"]))
+}
+
+fn main() -> io::Result<()> {
+    // read_configs()?;
+    prompt_color().unwrap();
     Ok(())
-}
-
-struct ShellConfig {
-    prompt_color: String,
-    prompt_string_format: String,
-}
-
-impl ShellConfig {
-    fn build(args: Vec<String>) -> io::Result<ShellConfig> {
-        let mut args = args.iter();
-
-        let prompt_color = match args.next() {
-            Some(arg) => arg.to_owned(),
-            None => {
-                return Err(io::Error::other(
-                    "Did not receive prompt color argument.",
-                ));
-            }
-        };
-
-        let prompt_string_format = match args.next() {
-            Some(arg) => arg.to_owned(),
-            None => {
-                return Err(io::Error::other(
-                    "Did not recieve prompt format argument",
-                ));
-            }
-        };
-
-        Ok(ShellConfig {
-            prompt_color,
-            prompt_string_format,
-        })
-    }
 }
