@@ -1,8 +1,6 @@
 // Copyright (c) 2026 Michael Kestner. All Rights Reserved.
 // configs.rs
 
-// #![allow(unused)]
-
 use std::collections::HashMap;
 use std::fs;
 use std::io::{self, BufRead};
