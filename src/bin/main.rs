@@ -14,36 +14,41 @@ use shellrs::print_help;
 use shellrs::configs;
 
 // Invokes an appropriate syscall from the exec family.
-fn my_exec(arg_list: &[&str]) {
+fn my_exec(arg_list: &[&str]) -> io::Result<()> {
     if arg_list.is_empty() {
-        return;
+        return Ok(());
     }
 
-    let file_name_cstring: CString = CString::new(arg_list[0]).unwrap();
+    let file_name_cstring: CString = CString::new(arg_list[0])?;
     let file_name: &CStr = file_name_cstring.as_c_str();
 
-    let c_strings: Vec<CString> =
-        arg_list.iter().map(|s| CString::new(*s).unwrap()).collect();
+    // Ignore the values that error, if applicable.
+    let c_strings: Vec<CString> = arg_list
+        .iter()
+        .map(|s| CString::new(*s))
+        .filter_map(Result::ok)
+        .collect();
 
     let c_str_refs: Vec<&CStr> =
         c_strings.iter().map(|cs| cs.as_c_str()).collect();
 
+    // This doesn't crash the program, instead just continues.
     execvp(file_name, &c_str_refs).unwrap_err();
 
     println!("Command not found: {}", arg_list[0]);
+    Ok(())
 }
 
-// Invoke a fork syscall and, if I am the child process, call the myExec
-// function that will execute the command passed in via argList
-fn fork_and_exec(arg_list: &[&str]) {
+// Invoke a fork syscall and, if I am the child process, call the my_exec
+// function that will execute the command passed in via arg_list.
+fn fork_and_exec(arg_list: &[&str]) -> io::Result<()> {
     match unsafe { fork() } {
-        Ok(ForkResult::Parent { child }) => {
-            waitpid(child, None).unwrap();
-        }
-        Ok(ForkResult::Child) => {
-            my_exec(arg_list);
-        }
-        Err(e) => eprintln!("Fork failed! {}", e),
+        Ok(ForkResult::Parent { child }) => match waitpid(child, None) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(io::Error::other(e)),
+        },
+        Ok(ForkResult::Child) => my_exec(arg_list),
+        Err(e) => Err(io::Error::other(e)),
     }
 }
 
@@ -163,7 +168,7 @@ fn main() -> io::Result<()> {
             break;
         }
 
-        fork_and_exec(&args);
+        fork_and_exec(&args)?;
     }
 
     Ok(())
