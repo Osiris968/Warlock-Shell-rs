@@ -62,6 +62,7 @@ pub fn print_help() {
     println!("exit");
     println!("help");
     println!("cd");
+    println!("pipes");
 }
 
 // Construct the shell's prompt from the username, hostname, and current path.

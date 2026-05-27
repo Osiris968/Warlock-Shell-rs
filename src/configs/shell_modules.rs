@@ -1,7 +1,9 @@
 #![allow(unused)]
 
 use std::collections::HashMap;
-use std::io;
+use std::io::{self, BufRead, BufReader, Write};
+use std::process::{Command, Stdio};
+use std::thread;
 
 pub fn prompt_color(c: Option<&str>) -> String {
     let color_map: HashMap<&str, &str> = HashMap::from([
@@ -41,8 +43,37 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
         right_args.remove(0);
     }
 
-    println!("Left args: {:#?}", arg_list);
-    println!("Right args: {:#?}", right_args);
+    let first_command = match arg_list.first() {
+        Some(arg) => arg.to_string(),
+        None => {
+            eprintln!("Nothing provided before the pipe.");
+            return Ok(());
+        }
+    };
+    arg_list.remove(0);
+    let second_command = match right_args.first() {
+        Some(arg) => arg.to_string(),
+        None => {
+            eprintln!("Nothing provided after the pipe.");
+            return Ok(());
+        }
+    };
+    right_args.remove(0);
+
+    let mut upstream = Command::new(first_command)
+        .args(arg_list)
+        .stdout(Stdio::piped())
+        .spawn()?
+        .stdout
+        .unwrap();
+    let downstream = Command::new(second_command)
+        .args(right_args)
+        .stdin(upstream)
+        .spawn()?;
+
+    let output = downstream.wait_with_output()?;
+
+    println!("{}", String::from_utf8_lossy(&output.stdout));
 
     Ok(())
 }

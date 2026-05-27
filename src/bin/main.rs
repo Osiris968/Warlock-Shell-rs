@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use std::path;
 
 use shellrs::build_shell_prompt;
+use shellrs::configs::shell_modules::handle_pipe;
 use shellrs::fork_and_exec;
 use shellrs::get_home_directory;
 use shellrs::print_help;
@@ -67,11 +68,9 @@ fn parse_commands(arg_list: Vec<&str>) -> i32 {
         }
     };
 
-    // TODO: Handle pipes.
-    for arg in &arg_list {
-        if arg == &"|" {
-            todo!();
-        }
+    if arg_list.contains(&"|") {
+        handle_pipe(arg_list.clone()).unwrap();
+        return 1;
     }
 
     if let Some(first) = arg_list.first() {
