@@ -79,13 +79,20 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
 }
 
 // TODO: Be able to handle command aliases.
-fn parse_aliases(config_map: HashMap<String, String>) -> io::Result<()> {
+pub fn parse_aliases(
+    config_map: &HashMap<String, String>,
+) -> io::Result<HashMap<String, String>> {
     let mut alias_map: HashMap<String, String> = HashMap::new();
+
     for (key, value) in config_map {
         if key.contains("alias") {
-            key.split_whitespace();
-            alias_map.insert(value, key);
+            let tuple = key.split_once(' ').unwrap();
+            alias_map.insert(String::from(tuple.1), String::from(value));
         }
     }
-    Ok(())
+
+    println!("{:#?}", alias_map);
+    // println!("{:#?}", config_map);
+
+    Ok(alias_map)
 }

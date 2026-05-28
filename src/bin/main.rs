@@ -4,7 +4,7 @@ use std::io::{self, Write};
 use std::path;
 
 use shellrs::build_shell_prompt;
-use shellrs::configs::shell_modules::handle_pipe;
+use shellrs::configs::shell_modules::{handle_pipe, parse_aliases};
 use shellrs::fork_and_exec;
 use shellrs::get_home_directory;
 use shellrs::print_help;
@@ -48,7 +48,7 @@ fn expand_tilde(path: &str) -> String {
     owned_path
 }
 
-fn parse_commands(arg_list: Vec<&str>) -> i32 {
+fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     // User supplied no arguments, we can just continue the loop.
     if arg_list.is_empty() {
         return 1;
@@ -99,6 +99,7 @@ fn main() -> io::Result<()> {
         Some(val) => val,
         None => "green",
     };
+    let _alias_map = parse_aliases(&config_map);
 
     loop {
         print!("{}", build_shell_prompt(prompt_color));
@@ -124,7 +125,8 @@ fn main() -> io::Result<()> {
 
         let args: Vec<&str> = user_input.split_whitespace().collect();
 
-        let code = parse_commands(args.clone());
+        // TODO: Give alias_map to parse_commands to check against every time?
+        let code = parse_commands(&args);
 
         if code == 1 {
             continue;
