@@ -24,7 +24,7 @@ pub fn prompt_color(c: Option<&str>) -> String {
     }
 }
 
-// Take the output of one command and give it to another as arguments.
+// Take the output of one command and give it to the input of another.
 pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     // No pipe was provided.
     let index = match arg_list.iter().position(|x| x == &"|") {
@@ -79,3 +79,13 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
 }
 
 // TODO: Be able to handle command aliases.
+fn parse_aliases(config_map: HashMap<String, String>) -> io::Result<()> {
+    let mut alias_map: HashMap<String, String> = HashMap::new();
+    for (key, value) in config_map {
+        if key.contains("alias") {
+            key.split_whitespace();
+            alias_map.insert(value, key);
+        }
+    }
+    Ok(())
+}

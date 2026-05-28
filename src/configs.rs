@@ -99,36 +99,37 @@ pub fn read_configs() -> io::Result<HashMap<String, String>> {
 
     // line is a Result<String, Error>.
     for line in reader.lines() {
-        let line = line?;
+        let line = match line {
+            Ok(line) => line,
+            Err(_) => continue,
+        };
+
         // Skips line if it's a comment or if it's empty.
         if line.starts_with('#') || line.is_empty() {
             continue;
         }
 
         // Split key value pairs by '=' and get rid of comments.
-        let strs: Vec<&str> = line
+        let strs: Option<(&str, &str)> = line
             .split_once('#') // Split once returns a (before, after) tuple.
             .map(|(before, _)| before) // This map discards the after part of the tuple.
             .unwrap_or(&line) // If there is no '#', just use the whole string.
-            .split('=') // Then split on the '='
-            .collect();
+            .split_once('='); // Then split on the first '='.
 
-        if strs.len() <= 1 {
-            eprintln!("Either key or value is missing, skipping line.");
+        let Some(strs) = strs else {
+            eprintln!("No equal sign, skipping line.");
             continue;
-        } else if strs.len() > 2 {
-            eprintln!("Line has more than one equal sign, skipping line.");
-            continue;
-        }
+        };
 
-        let strs: Vec<&str> = strs.iter().map(|&str| str.trim()).collect();
+        // Trim whitespace.
+        let strs = (strs.0.trim(), strs.1.trim());
 
-        if strs[0].is_empty() || strs[1].is_empty() {
+        if strs.0.is_empty() || strs.1.is_empty() {
             eprintln!("Either key or value is missing, skipping line.");
             continue;
         }
 
-        config_map.insert(String::from(strs[0]), String::from(strs[1]));
+        config_map.insert(String::from(strs.0), String::from(strs.1));
     }
 
     Ok(config_map)
