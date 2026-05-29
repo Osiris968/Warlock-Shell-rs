@@ -5,6 +5,8 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::process::{Command, Stdio};
 use std::thread;
 
+use crate::parse_commands;
+
 pub fn prompt_color(c: Option<&str>) -> String {
     let color_map: HashMap<&str, &str> = HashMap::from([
         ("red", "\x1b[31m"),
@@ -24,6 +26,60 @@ pub fn prompt_color(c: Option<&str>) -> String {
     }
 }
 
+pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
+    let index = match arg_list.iter().position(|x| x == &"&&") {
+        Some(val) => val,
+        None => return Ok(()),
+    };
+
+    let mut right_args: Vec<&str> = arg_list.split_off(index);
+
+    println!("{:#?}", arg_list);
+    println!("{:#?}", right_args);
+
+    // Only given one command and the chain. (Eg. ls -l &&).
+    if right_args.len() == 1 {
+        return Err(io::Error::other("Nothing provided after &&."));
+    } else {
+        right_args.remove(0);
+    }
+
+    // Parse built in commands first.
+    if parse_commands(&arg_list) != 0 || parse_commands(&right_args) != 0 {
+        println!("TEST");
+        return Err(io::Error::other("Could not parse command(s)"));
+    }
+
+    let first_command = match arg_list.first() {
+        Some(arg) => arg.to_string(),
+        None => {
+            return Err(io::Error::other("Nothing provided before the &&."));
+        }
+    };
+    arg_list.remove(0);
+    let second_command = match right_args.first() {
+        Some(arg) => arg.to_string(),
+        None => {
+            return Err(io::Error::other("Nothing provided after the &&."));
+        }
+    };
+    right_args.remove(0);
+
+    // If this errors, the command never started.
+    let mut upstream = Command::new(first_command).args(arg_list).output()?;
+
+    // If this errors, the command started but didn't finish.
+    if !upstream.status.success() {
+        return Err(io::Error::other("First command failed, skipping second."));
+    }
+    // In either case, we do not want to start the second command.
+
+    let mut downstream =
+        Command::new(second_command).args(right_args).output()?;
+
+    Ok(())
+}
+
 // Take the output of one command and give it to the input of another.
 pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     // No pipe was provided.
@@ -36,6 +92,11 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     // with the other elements.
     let mut right_args: Vec<&str> = arg_list.split_off(index);
 
+    // Parse built in commands first.
+    if parse_commands(&arg_list) != 0 || parse_commands(&right_args) != 0 {
+        return Err(io::Error::other("Could not parse command."));
+    }
+
     // Only given one command and the pipe. (Eg. ls -l |).
     if right_args.len() == 1 {
         return Err(io::Error::other("Nothing provided after pipe."));
@@ -46,16 +107,14 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     let first_command = match arg_list.first() {
         Some(arg) => arg.to_string(),
         None => {
-            eprintln!("Nothing provided before the pipe.");
-            return Ok(());
+            return Err(io::Error::other("Nothing provided before the pipe"));
         }
     };
     arg_list.remove(0);
     let second_command = match right_args.first() {
         Some(arg) => arg.to_string(),
         None => {
-            eprintln!("Nothing provided after the pipe.");
-            return Ok(());
+            return Err(io::Error::other("Nothing provided after the pipe."));
         }
     };
     right_args.remove(0);
@@ -65,6 +124,7 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
         .stdout(Stdio::piped())
         .spawn()?
         .stdout
+        // NOTE: Unwrap?
         .unwrap();
     let downstream = Command::new(second_command)
         .args(right_args)

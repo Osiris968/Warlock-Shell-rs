@@ -9,6 +9,7 @@ use std::io;
 use std::path;
 
 use crate::configs::shell_modules::prompt_color;
+use crate::configs::shell_modules::{chain_commands, handle_pipe};
 
 pub mod configs;
 
@@ -50,6 +51,99 @@ pub fn fork_and_exec(arg_list: &[&str]) -> io::Result<()> {
         Ok(ForkResult::Child) => my_exec(arg_list),
         Err(e) => Err(io::Error::other(e)),
     }
+}
+
+fn change_directory(new_path: &path::Path) {
+    if let Err(e) = env::set_current_dir(new_path) {
+        eprintln!("Failed to change directory: {}", e);
+    }
+}
+
+fn expand_tilde(path: &str) -> String {
+    let owned_path = String::from(path);
+    if path.is_empty() {
+        return owned_path;
+    }
+
+    let mut path_chars = path.char_indices();
+
+    if path_chars.next() != Some((0, '~')) {
+        return owned_path;
+    }
+
+    let home_dir = match get_home_directory() {
+        Ok(home) => home,
+        Err(_) => {
+            eprintln!("Could not find home directory");
+            return owned_path;
+        }
+    };
+
+    if path.len() == 1 {
+        return home_dir;
+    }
+
+    if path_chars.next() == Some((1, '/')) {
+        return home_dir + &path[1..];
+    }
+
+    owned_path
+}
+
+pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
+    // User supplied no arguments, we can just continue the loop.
+    if arg_list.is_empty() {
+        return 1;
+    }
+
+    // Translate ~ to the home directory.
+    let expanded_args: Vec<String> =
+        arg_list.iter().map(|arg| expand_tilde(arg)).collect();
+    let arg_list: Vec<&str> =
+        expanded_args.iter().map(|arg| arg.as_str()).collect();
+
+    let home_dir = match get_home_directory() {
+        Ok(home) => home,
+        Err(_) => {
+            eprintln!("Could not find home directory");
+            return 1;
+        }
+    };
+
+    // User wants to pipe a command into another.
+    if arg_list.contains(&"|") {
+        if let Err(e) = handle_pipe(arg_list) {
+            eprintln!("{}", e);
+        }
+        return 0;
+    }
+    if arg_list.contains(&"&&") {
+        if let Err(e) = chain_commands(arg_list) {
+            eprintln!("{}", e);
+        }
+        return 0;
+    }
+
+    // Custom parsing for builtin commands.
+    // These get executed before looking for aliases.
+    if let Some(first) = arg_list.first() {
+        if *first == "exit" {
+            return 255;
+        } else if *first == "help" {
+            print_help();
+            return 1;
+        } else if *first == "cd" {
+            match arg_list.len() {
+                1 => change_directory(path::Path::new(&home_dir)),
+                _ => change_directory(path::Path::new(arg_list[1])),
+            };
+            return 1;
+        } else if *first == "warlock_gen_config" {
+            configs::create_config_file();
+            return 1;
+        }
+    }
+    0
 }
 
 pub fn print_help() {
