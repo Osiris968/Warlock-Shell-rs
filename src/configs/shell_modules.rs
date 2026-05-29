@@ -78,7 +78,6 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     Ok(())
 }
 
-// TODO: Be able to handle command aliases.
 pub fn parse_aliases(
     config_map: &HashMap<String, String>,
 ) -> io::Result<HashMap<String, String>> {
@@ -90,9 +89,6 @@ pub fn parse_aliases(
             alias_map.insert(String::from(tuple.1), String::from(value));
         }
     }
-
-    println!("{:#?}", alias_map);
-    // println!("{:#?}", config_map);
 
     Ok(alias_map)
 }

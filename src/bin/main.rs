@@ -68,11 +68,16 @@ fn parse_commands(arg_list: &Vec<&str>) -> i32 {
         }
     };
 
+    // User wants to pipe a command into another.
     if arg_list.contains(&"|") {
-        handle_pipe(arg_list.clone()).unwrap();
+        if let Err(e) = handle_pipe(arg_list) {
+            eprintln!("{}", e);
+        }
         return 1;
     }
 
+    // Custom parsing for builtin commands.
+    // These get executed before looking for aliases.
     if let Some(first) = arg_list.first() {
         if *first == "exit" {
             return 255;
@@ -99,7 +104,7 @@ fn main() -> io::Result<()> {
         Some(val) => val,
         None => "green",
     };
-    let _alias_map = parse_aliases(&config_map);
+    let alias_map = parse_aliases(&config_map)?;
 
     loop {
         print!("{}", build_shell_prompt(prompt_color));
@@ -125,7 +130,6 @@ fn main() -> io::Result<()> {
 
         let args: Vec<&str> = user_input.split_whitespace().collect();
 
-        // TODO: Give alias_map to parse_commands to check against every time?
         let code = parse_commands(&args);
 
         if code == 1 {
@@ -134,6 +138,13 @@ fn main() -> io::Result<()> {
             break;
         }
 
+        // O(n) for the alias map, but hopefully that should never be too large.
+        if alias_map.contains_key(args[0]) {
+            let arg_vec_with_alias: Vec<&str> =
+                alias_map[args[0]].split_whitespace().collect();
+            fork_and_exec(&arg_vec_with_alias)?;
+            continue;
+        }
         fork_and_exec(&args)?;
     }
 
