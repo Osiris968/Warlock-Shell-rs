@@ -5,7 +5,7 @@ use nix::{
 
 use std::env;
 use std::ffi::{CStr, CString};
-use std::io;
+use std::io::{self, Write};
 use std::path;
 
 use crate::configs::shell_modules::prompt_color;
@@ -127,23 +127,46 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     // Custom parsing for builtin commands.
     // These get executed before looking for aliases.
     if let Some(first) = arg_list.first() {
-        if *first == "exit" {
-            return 255;
-        } else if *first == "help" {
-            print_help();
-            return 1;
-        } else if *first == "cd" {
-            match arg_list.len() {
-                1 => change_directory(path::Path::new(&home_dir)),
-                _ => change_directory(path::Path::new(arg_list[1])),
-            };
-            return 1;
-        } else if *first == "warlock_gen_config" {
-            configs::create_config_file();
-            return 1;
+        match *first {
+            "exit" => {
+                return 255;
+            }
+            "help" => {
+                print_help();
+                return 1;
+            }
+            "cd" => {
+                match arg_list.len() {
+                    1 => change_directory(path::Path::new(&home_dir)),
+                    _ => change_directory(path::Path::new(arg_list[1])),
+                };
+                return 1;
+            }
+            "warlock_gen_config" => {
+                configs::create_config_file();
+                return 1;
+            }
+            "clear" => match clear_screen() {
+                Ok(_) => {
+                    return 1;
+                }
+                Err(e) => {
+                    eprintln!("{e}");
+                    return 1;
+                }
+            },
+            _ => {
+                return 0;
+            }
         }
     }
     0
+}
+
+pub fn clear_screen() -> io::Result<()> {
+    print!("\x1B[2J\x1B[1;1H");
+    io::stdout().flush()?;
+    Ok(())
 }
 
 pub fn print_help() {

@@ -34,9 +34,6 @@ pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
 
     let mut right_args: Vec<&str> = arg_list.split_off(index);
 
-    println!("{:#?}", arg_list);
-    println!("{:#?}", right_args);
-
     // Only given one command and the chain. (Eg. ls -l &&).
     if right_args.len() == 1 {
         return Err(io::Error::other("Nothing provided after &&."));
@@ -45,37 +42,44 @@ pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
     }
 
     // Parse built in commands first.
-    if parse_commands(&arg_list) != 0 || parse_commands(&right_args) != 0 {
-        println!("TEST");
-        return Err(io::Error::other("Could not parse command(s)"));
-    }
+    let builtin_first = parse_commands(&arg_list);
+    let builtin_second = parse_commands(&right_args);
 
     let first_command = match arg_list.first() {
         Some(arg) => arg.to_string(),
         None => {
-            return Err(io::Error::other("Nothing provided before the &&."));
+            return Err(io::Error::other("Nothing provided before &&."));
         }
     };
     arg_list.remove(0);
+
     let second_command = match right_args.first() {
         Some(arg) => arg.to_string(),
         None => {
-            return Err(io::Error::other("Nothing provided after the &&."));
+            return Err(io::Error::other("Nothing provided after &&."));
         }
     };
     right_args.remove(0);
 
-    // If this errors, the command never started.
-    let mut upstream = Command::new(first_command).args(arg_list).output()?;
+    // parse_commands returns 0 when the command given is not builtin. We do not want to execute a
+    // binary if there is a builtin command of the same name.
+    if builtin_first == 0 {
+        // If this errors, the command never started.
+        let command_status =
+            Command::new(first_command).args(&arg_list).output()?;
 
-    // If this errors, the command started but didn't finish.
-    if !upstream.status.success() {
-        return Err(io::Error::other("First command failed, skipping second."));
+        // If this errors, the command started but didn't finish.
+        if !command_status.status.success() {
+            return Err(io::Error::other(
+                "First command failed, skipping second.",
+            ));
+        }
+        // In either case, we do not want to start the second command.
     }
-    // In either case, we do not want to start the second command.
 
-    let mut downstream =
-        Command::new(second_command).args(right_args).output()?;
+    if builtin_second == 0 {
+        Command::new(second_command).args(&right_args).status()?;
+    }
 
     Ok(())
 }
