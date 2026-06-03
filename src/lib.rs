@@ -13,6 +13,20 @@ use crate::configs::shell_modules::{chain_commands, handle_pipe};
 
 pub mod configs;
 
+fn command_type(command: &str) -> io::Result<String> {
+    // let path = std::env::var("PATH")?;
+    let path = match std::env::var("PATH") {
+        Ok(path) => path + command,
+        Err(_) => return Err(io::Error::other("Could not determine $PATH")),
+    };
+
+    if parse_commands(&vec![command]) != 0 {
+        return Ok(String::from("{} is builtin"));
+    }
+
+    Ok(String::from("no"))
+}
+
 // Invokes an appropriate syscall from the exec family.
 fn my_exec(arg_list: &[&str]) -> io::Result<()> {
     if arg_list.is_empty() {
@@ -30,8 +44,7 @@ fn my_exec(arg_list: &[&str]) -> io::Result<()> {
         .filter_map(Result::ok)
         .collect();
 
-    let c_str_refs: Vec<&CStr> =
-        c_strings.iter().map(|cs| cs.as_c_str()).collect();
+    let c_str_refs: Vec<&CStr> = c_strings.iter().map(|cs| cs.as_c_str()).collect();
 
     // This doesn't crash the program, instead just continues.
     execvp(file_name, &c_str_refs).unwrap_err();
@@ -97,10 +110,8 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     }
 
     // Translate ~ to the home directory.
-    let expanded_args: Vec<String> =
-        arg_list.iter().map(|arg| expand_tilde(arg)).collect();
-    let arg_list: Vec<&str> =
-        expanded_args.iter().map(|arg| arg.as_str()).collect();
+    let expanded_args: Vec<String> = arg_list.iter().map(|arg| expand_tilde(arg)).collect();
+    let arg_list: Vec<&str> = expanded_args.iter().map(|arg| arg.as_str()).collect();
 
     let home_dir = match get_home_directory() {
         Ok(home) => home,
@@ -257,9 +268,7 @@ pub fn get_home_directory() -> io::Result<String> {
     let home_string = match home_path.to_str() {
         Some(home) => home,
         None => {
-            return Err(io::Error::other(
-                "Could not convert home path to string",
-            ));
+            return Err(io::Error::other("Could not convert home path to string"));
         }
     };
     Ok(String::from(home_string))

@@ -65,14 +65,11 @@ pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
     // binary if there is a builtin command of the same name.
     if builtin_first == 0 {
         // If this errors, the command never started.
-        let command_status =
-            Command::new(first_command).args(&arg_list).output()?;
+        let command_status = Command::new(first_command).args(&arg_list).output()?;
 
         // If this errors, the command started but didn't finish.
         if !command_status.status.success() {
-            return Err(io::Error::other(
-                "First command failed, skipping second.",
-            ));
+            return Err(io::Error::other("First command failed, skipping second."));
         }
         // In either case, we do not want to start the second command.
     }
@@ -128,7 +125,6 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
         .stdout(Stdio::piped())
         .spawn()?
         .stdout
-        // NOTE: Unwrap?
         .unwrap();
     let downstream = Command::new(second_command)
         .args(right_args)
@@ -142,9 +138,7 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     Ok(())
 }
 
-pub fn parse_aliases(
-    config_map: &HashMap<String, String>,
-) -> io::Result<HashMap<String, String>> {
+pub fn parse_aliases(config_map: &HashMap<String, String>) -> io::Result<HashMap<String, String>> {
     let mut alias_map: HashMap<String, String> = HashMap::new();
 
     for (key, value) in config_map {
