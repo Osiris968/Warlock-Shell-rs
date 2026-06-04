@@ -13,30 +13,40 @@ use crate::configs::shell_modules::{chain_commands, handle_pipe};
 
 pub mod configs;
 
-// TODO: Does not work yet :)
-pub fn command_type(command: &str) -> io::Result<String> {
-    // let path = std::env::var("PATH")?;
-    let path = match std::env::var("PATH") {
+// Check what kind of command the user supplied. E.g. cd, ls, etc.
+pub fn command_type(command: &str) {
+    // NO infinite loop!
+    if command == "type" {
+        println!("{} is builtin", command);
+        return;
+    }
+
+    let check_command: &str = &format!("/{command}");
+
+    if parse_commands(&vec![command]) != 0 {
+        println!("{} is a builtin", command);
+        return;
+    }
+
+    let user_path = match std::env::var("PATH") {
         Ok(path) => path,
-        Err(_) => return Err(io::Error::other("Could not determine $PATH")),
+        Err(e) => {
+            println!("Could not determine $PATH: {e}");
+            return;
+        }
     };
 
-    let paths: Vec<&str> = path.split(':').collect();
+    let paths: Vec<&str> = user_path.split(':').collect();
 
-    for path in &paths {
-        let path_str = String::from(*path) + command;
+    for dir in &paths {
+        let path_str = String::from(*dir) + check_command;
         if path::Path::new(&path_str).exists() {
-            return Ok(format!("{} is {}", command, path_str));
+            println!("{} is {}", command, path_str);
+            return;
         }
     }
 
-    // println!("{:#?}", paths);
-
-    // if parse_commands(&vec![command]) != 0 {
-    //     return Ok(String::from("{} is builtin"));
-    // }
-
-    Ok(String::from("no"))
+    println!("type: Could not find '{}'", command);
 }
 
 // Invokes an appropriate syscall from the exec family.
@@ -56,7 +66,8 @@ fn my_exec(arg_list: &[&str]) -> io::Result<()> {
         .filter_map(Result::ok)
         .collect();
 
-    let c_str_refs: Vec<&CStr> = c_strings.iter().map(|cs| cs.as_c_str()).collect();
+    let c_str_refs: Vec<&CStr> =
+        c_strings.iter().map(|cs| cs.as_c_str()).collect();
 
     // This doesn't crash the program, instead just continues.
     execvp(file_name, &c_str_refs).unwrap_err();
@@ -122,8 +133,10 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     }
 
     // Translate ~ to the home directory.
-    let expanded_args: Vec<String> = arg_list.iter().map(|arg| expand_tilde(arg)).collect();
-    let arg_list: Vec<&str> = expanded_args.iter().map(|arg| arg.as_str()).collect();
+    let expanded_args: Vec<String> =
+        arg_list.iter().map(|arg| expand_tilde(arg)).collect();
+    let arg_list: Vec<&str> =
+        expanded_args.iter().map(|arg| arg.as_str()).collect();
 
     let home_dir = match get_home_directory() {
         Ok(home) => home,
@@ -178,6 +191,10 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
                     return 1;
                 }
             },
+            "type" => {
+                command_type(first);
+                return 1;
+            }
             _ => {
                 return 0;
             }
@@ -280,7 +297,9 @@ pub fn get_home_directory() -> io::Result<String> {
     let home_string = match home_path.to_str() {
         Some(home) => home,
         None => {
-            return Err(io::Error::other("Could not convert home path to string"));
+            return Err(io::Error::other(
+                "Could not convert home path to string",
+            ));
         }
     };
     Ok(String::from(home_string))
