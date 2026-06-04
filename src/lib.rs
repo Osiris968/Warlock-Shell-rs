@@ -13,16 +13,28 @@ use crate::configs::shell_modules::{chain_commands, handle_pipe};
 
 pub mod configs;
 
-fn command_type(command: &str) -> io::Result<String> {
+// TODO: Does not work yet :)
+pub fn command_type(command: &str) -> io::Result<String> {
     // let path = std::env::var("PATH")?;
     let path = match std::env::var("PATH") {
-        Ok(path) => path + command,
+        Ok(path) => path,
         Err(_) => return Err(io::Error::other("Could not determine $PATH")),
     };
 
-    if parse_commands(&vec![command]) != 0 {
-        return Ok(String::from("{} is builtin"));
+    let paths: Vec<&str> = path.split(':').collect();
+
+    for path in &paths {
+        let path_str = String::from(*path) + command;
+        if path::Path::new(&path_str).exists() {
+            return Ok(format!("{} is {}", command, path_str));
+        }
     }
+
+    // println!("{:#?}", paths);
+
+    // if parse_commands(&vec![command]) != 0 {
+    //     return Ok(String::from("{} is builtin"));
+    // }
 
     Ok(String::from("no"))
 }
@@ -37,10 +49,10 @@ fn my_exec(arg_list: &[&str]) -> io::Result<()> {
     let file_name_cstring: CString = CString::new(arg_list[0])?;
     let file_name: &CStr = file_name_cstring.as_c_str();
 
-    // Ignore the values that error, if applicable.
     let c_strings: Vec<CString> = arg_list
         .iter()
         .map(|s| CString::new(*s))
+        // Ignore the values that error, if applicable.
         .filter_map(Result::ok)
         .collect();
 
