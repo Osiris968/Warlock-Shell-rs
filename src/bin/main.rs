@@ -49,6 +49,7 @@ fn main() -> io::Result<()> {
         }
 
         // O(n) for the alias map, but hopefully that should never be too large.
+        // I am sure there is worse code somewhere in here.
         if alias_map.contains_key(args[0]) {
             let arg_vec_with_alias: Vec<&str> =
                 alias_map[args[0]].split_whitespace().collect();

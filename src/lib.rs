@@ -13,37 +13,6 @@ use crate::configs::shell_modules::{
 pub mod commands;
 pub mod configs;
 
-fn expand_tilde(path: &str) -> String {
-    let owned_path = String::from(path);
-    if path.is_empty() {
-        return owned_path;
-    }
-
-    let mut path_chars = path.char_indices();
-
-    if path_chars.next() != Some((0, '~')) {
-        return owned_path;
-    }
-
-    let home_dir = match get_home_directory() {
-        Ok(home) => home,
-        Err(_) => {
-            eprintln!("Could not find home directory");
-            return owned_path;
-        }
-    };
-
-    if path.len() == 1 {
-        return home_dir;
-    }
-
-    if path_chars.next() == Some((1, '/')) {
-        return home_dir + &path[1..];
-    }
-
-    owned_path
-}
-
 pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     // User supplied no arguments, we can just continue the loop.
     if arg_list.is_empty() {
@@ -113,7 +82,10 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
                 }
             },
             "type" => {
-                builtins::command_type(first);
+                match arg_list.len() {
+                    1 => {}
+                    _ => builtins::command_type(arg_list[1]),
+                }
                 return 1;
             }
             _ => {
@@ -122,6 +94,37 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
         }
     }
     0
+}
+
+fn expand_tilde(path: &str) -> String {
+    let owned_path = String::from(path);
+    if path.is_empty() {
+        return owned_path;
+    }
+
+    let mut path_chars = path.char_indices();
+
+    if path_chars.next() != Some((0, '~')) {
+        return owned_path;
+    }
+
+    let home_dir = match get_home_directory() {
+        Ok(home) => home,
+        Err(_) => {
+            eprintln!("Could not find home directory");
+            return owned_path;
+        }
+    };
+
+    if path.len() == 1 {
+        return home_dir;
+    }
+
+    if path_chars.next() == Some((1, '/')) {
+        return home_dir + &path[1..];
+    }
+
+    owned_path
 }
 
 // Construct the shell's prompt from the username, hostname, and current path.
@@ -165,7 +168,7 @@ pub fn build_shell_prompt(color: &str) -> String {
 
 // Take an absolute path and replace /home/{username} with ~.
 // Returns a String instead of PathBuf for simplicity's sake.
-pub fn condense_path(path: path::PathBuf) -> io::Result<String> {
+fn condense_path(path: path::PathBuf) -> io::Result<String> {
     // Take the given path as a PathBuf and turn it into a String.
     let path_string = if let Some(s) = path.to_str() {
         String::from(s)
