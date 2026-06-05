@@ -1,9 +1,9 @@
-#![allow(unused)]
+// Copyright (c) 2026 Michael Kestner. All Rights Reserved.
+// shell_modules.rs
 
 use std::collections::HashMap;
-use std::io::{self, BufRead, BufReader, Write};
+use std::io;
 use std::process::{Command, Stdio};
-use std::thread;
 
 use crate::parse_commands;
 
@@ -123,7 +123,7 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     };
     right_args.remove(0);
 
-    let mut upstream = Command::new(first_command)
+    let upstream = Command::new(first_command)
         .args(arg_list)
         .stdout(Stdio::piped())
         .spawn()?

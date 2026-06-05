@@ -1,8 +1,12 @@
+// Copyright (c) 2026 Michael Kestner. All Rights Reserved.
+// main.rs
+
 use std::collections::HashMap;
 use std::io::{self, Write};
 
+use shellrs::commands::fork_and_exec::fork_exec;
 use shellrs::configs::{read_configs, shell_modules::parse_aliases};
-use shellrs::{build_shell_prompt, fork_and_exec, parse_commands};
+use shellrs::{build_shell_prompt, parse_commands};
 
 fn main() -> io::Result<()> {
     let config_map: HashMap<String, String> = read_configs()?;
@@ -48,10 +52,10 @@ fn main() -> io::Result<()> {
         if alias_map.contains_key(args[0]) {
             let arg_vec_with_alias: Vec<&str> =
                 alias_map[args[0]].split_whitespace().collect();
-            fork_and_exec(&arg_vec_with_alias)?;
+            fork_exec(&arg_vec_with_alias)?;
             continue;
         }
-        fork_and_exec(&args)?;
+        fork_exec(&args)?;
     }
 
     Ok(())
