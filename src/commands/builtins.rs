@@ -19,16 +19,19 @@ pub fn clear_screen() -> io::Result<()> {
 }
 
 pub fn print_help() {
-    println!("Codename Warlock Shell");
+    println!("Warlock Shell");
     println!("Copyright @ Michael Kestner");
 
     println!();
 
-    println!("Supported Commands:");
+    println!("Supported Builtin Commands:");
     println!("exit");
     println!("help");
     println!("cd");
+    println!("clear");
+    println!("type");
     println!("pipes");
+    println!("chains (&&)");
 }
 
 pub fn change_directory(new_path: &path::Path) {
