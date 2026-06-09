@@ -6,9 +6,8 @@ use std::io;
 use std::path;
 
 use crate::commands::builtins;
-
-use crate::configs::config_reader::create_config_file;
-use crate::configs::shell_modules::{chain_commands, handle_pipe, prompt_color};
+use crate::configs::config_reader;
+use crate::configs::shell_modules;
 
 pub mod commands;
 pub mod configs;
@@ -20,8 +19,10 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     }
 
     // Translate ~ to the home directory.
-    let expanded_args: Vec<String> = arg_list.iter().map(|arg| expand_tilde(arg)).collect();
-    let arg_list: Vec<&str> = expanded_args.iter().map(|arg| arg.as_str()).collect();
+    let expanded_args: Vec<String> =
+        arg_list.iter().map(|arg| expand_tilde(arg)).collect();
+    let arg_list: Vec<&str> =
+        expanded_args.iter().map(|arg| arg.as_str()).collect();
 
     let home_dir = match get_home_directory() {
         Ok(home) => home,
@@ -33,14 +34,14 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
 
     // User wants to pipe a command into another.
     if arg_list.contains(&"|") {
-        if let Err(e) = handle_pipe(arg_list) {
+        if let Err(e) = shell_modules::handle_pipe(arg_list) {
             eprintln!("{}", e);
         }
         return 0;
     }
     // User wants to chain two commands together.
     if arg_list.contains(&"&&") {
-        if let Err(e) = chain_commands(arg_list) {
+        if let Err(e) = shell_modules::chain_commands(arg_list) {
             eprintln!("{}", e);
         }
         return 0;
@@ -60,12 +61,14 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
             "cd" => {
                 match arg_list.len() {
                     1 => builtins::change_directory(path::Path::new(&home_dir)),
-                    _ => builtins::change_directory(path::Path::new(arg_list[1])),
+                    _ => {
+                        builtins::change_directory(path::Path::new(arg_list[1]))
+                    }
                 };
                 return 1;
             }
             "warlock_gen_config" => {
-                create_config_file();
+                config_reader::create_config_file();
                 return 1;
             }
             "clear" => match builtins::clear_screen() {
@@ -126,7 +129,7 @@ fn expand_tilde(path: &str) -> String {
 // Construct the shell's prompt from the username, hostname, and current path.
 // Returns a formatted String with colors!
 pub fn build_shell_prompt(color: &str) -> String {
-    let color = prompt_color(Some(color));
+    let color = shell_modules::prompt_color(Some(color));
     let reset = "\x1b[0m";
 
     let username = match whoami::username() {
@@ -198,7 +201,9 @@ pub fn get_home_directory() -> io::Result<String> {
     let home_string = match home_path.to_str() {
         Some(home) => home,
         None => {
-            return Err(io::Error::other("Could not convert home path to string"));
+            return Err(io::Error::other(
+                "Could not convert home path to string",
+            ));
         }
     };
     Ok(String::from(home_string))

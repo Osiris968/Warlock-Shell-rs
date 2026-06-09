@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::io::{self, Write};
 
-use shellrs::commands::fork_and_exec::fork_exec;
+use shellrs::commands::builtins::fork_exec;
 
 use shellrs::configs::config_reader::read_configs;
 use shellrs::configs::shell_modules::parse_aliases;
@@ -54,7 +54,8 @@ fn main() -> io::Result<()> {
         // O(n) for the alias map, but hopefully that should never be too large.
         // I am sure there is worse code somewhere in here.
         if alias_map.contains_key(args[0]) {
-            let arg_vec_with_alias: Vec<&str> = alias_map[args[0]].split_whitespace().collect();
+            let arg_vec_with_alias: Vec<&str> =
+                alias_map[args[0]].split_whitespace().collect();
             fork_exec(&arg_vec_with_alias)?;
             continue;
         }
