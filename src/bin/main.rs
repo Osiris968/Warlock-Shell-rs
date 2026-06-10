@@ -5,10 +5,9 @@ use std::collections::HashMap;
 use std::io::{self, Write};
 
 use shellrs::commands::builtins::fork_exec;
-
-use shellrs::configs::config_reader::read_configs;
-use shellrs::configs::shell_modules::parse_aliases;
-
+use shellrs::configs::{
+    config_reader::read_configs, shell_modules::parse_aliases,
+};
 use shellrs::{build_shell_prompt, parse_commands};
 
 fn main() -> io::Result<()> {
