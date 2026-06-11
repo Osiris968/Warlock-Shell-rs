@@ -143,7 +143,7 @@ pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
 
 pub fn parse_aliases(
     config_map: &HashMap<String, String>,
-) -> io::Result<HashMap<String, String>> {
+) -> HashMap<String, String> {
     let mut alias_map: HashMap<String, String> = HashMap::new();
 
     for (key, value) in config_map {
@@ -159,5 +159,5 @@ pub fn parse_aliases(
         }
     }
 
-    Ok(alias_map)
+    alias_map
 }

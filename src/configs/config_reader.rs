@@ -74,7 +74,7 @@ pub fn create_config_file() -> bool {
 
     if fs::write(&file_path, data).is_err() {
         eprintln!("Could not write data to new file");
-        return false;
+        return true;
     }
 
     true

@@ -11,12 +11,18 @@ use shellrs::configs::{
 use shellrs::{build_shell_prompt, parse_commands};
 
 fn main() -> io::Result<()> {
-    let config_map: HashMap<String, String> = read_configs()?;
+    let config_map: HashMap<String, String> = match read_configs() {
+        Ok(map) => map,
+        Err(e) => {
+            eprintln!("{}", e);
+            HashMap::new()
+        }
+    };
     let prompt_color: &str = match config_map.get("prompt_color") {
         Some(val) => val,
         None => "green",
     };
-    let alias_map = parse_aliases(&config_map)?;
+    let alias_map = parse_aliases(&config_map);
 
     loop {
         print!("{}", build_shell_prompt(prompt_color));
