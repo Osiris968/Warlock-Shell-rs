@@ -27,7 +27,7 @@ pub fn prompt_color(c: Option<&str>) -> String {
 }
 
 pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
-    let index = match arg_list.iter().position(|x| x == &"&&") {
+    let index = match arg_list.iter().position(|x| *x == "&&") {
         Some(val) => val,
         None => return Ok(()),
     };
@@ -87,7 +87,7 @@ pub fn chain_commands(mut arg_list: Vec<&str>) -> io::Result<()> {
 // Take the output of one command and give it to the input of another.
 pub fn handle_pipe(mut arg_list: Vec<&str>) -> io::Result<()> {
     // No pipe was provided.
-    let index = match arg_list.iter().position(|x| x == &"|") {
+    let index = match arg_list.iter().position(|x| *x == "|") {
         Some(val) => val,
         None => return Ok(()),
     };
@@ -148,7 +148,13 @@ pub fn parse_aliases(
 
     for (key, value) in config_map {
         if key.contains("alias") {
-            let tuple = key.split_once(' ').unwrap();
+            let tuple = match key.split_once(' ') {
+                Some(t) => t,
+                None => {
+                    eprintln!("No whitespace found. Skipping line.");
+                    continue;
+                }
+            };
             alias_map.insert(String::from(tuple.1), String::from(value));
         }
     }
