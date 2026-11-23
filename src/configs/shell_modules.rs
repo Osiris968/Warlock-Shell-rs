@@ -22,7 +22,7 @@ pub fn prompt_color(c: Option<&str>) -> String {
 
     match color_map.get(&color) {
         Some(val) => val.to_string(),
-        None => String::from("\x1b[32m"),
+        None => String::from("\x1b[32m"), // Not found = green
     }
 }
 
