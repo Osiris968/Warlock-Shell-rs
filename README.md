@@ -30,7 +30,11 @@ cd Warlock-Shell-rs
 cargo run --release
 ```
 
-The binary is built from `src/bin/main.rs`, so it ends up at `target/release/main`.
+The binary is named `warlock` and ends up at `target/release/warlock`. To install it onto your `PATH`, run:
+
+```sh
+cargo install --path .
+```
 
 ## Builtin commands
 
