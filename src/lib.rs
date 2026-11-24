@@ -9,8 +9,13 @@ use crate::commands::builtins;
 use crate::configs::config_reader;
 use crate::configs::shell_modules;
 
-pub mod commands;
-pub mod configs;
+pub mod commands {
+    pub mod builtins;
+}
+pub mod configs {
+    pub mod config_reader;
+    pub mod shell_modules;
+}
 
 pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     // User supplied no arguments, we can just continue the loop.
@@ -19,10 +24,8 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
     }
 
     // Translate ~ to the home directory.
-    let expanded_args: Vec<String> =
-        arg_list.iter().map(|arg| expand_tilde(arg)).collect();
-    let arg_list: Vec<&str> =
-        expanded_args.iter().map(|arg| arg.as_str()).collect();
+    let expanded_args: Vec<String> = arg_list.iter().map(|arg| expand_tilde(arg)).collect();
+    let arg_list: Vec<&str> = expanded_args.iter().map(|arg| arg.as_str()).collect();
 
     let home_dir = match get_home_directory() {
         Ok(home) => home,
@@ -61,9 +64,7 @@ pub fn parse_commands(arg_list: &Vec<&str>) -> i32 {
             "cd" => {
                 match arg_list.len() {
                     1 => builtins::change_directory(path::Path::new(&home_dir)),
-                    _ => {
-                        builtins::change_directory(path::Path::new(arg_list[1]))
-                    }
+                    _ => builtins::change_directory(path::Path::new(arg_list[1])),
                 };
                 return 1;
             }
@@ -201,9 +202,7 @@ pub fn get_home_directory() -> io::Result<String> {
     let home_string = match home_path.to_str() {
         Some(home) => home,
         None => {
-            return Err(io::Error::other(
-                "Could not convert home path to string",
-            ));
+            return Err(io::Error::other("Could not convert home path to string"));
         }
     };
     Ok(String::from(home_string))
